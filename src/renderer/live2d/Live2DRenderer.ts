@@ -4,8 +4,10 @@ import '@pixi/display'
 import '@pixi/sprite'
 import { extensions } from '@pixi/extensions'
 import { Ticker, TickerPlugin } from '@pixi/ticker'
+import { CharacterAvatar } from './CharacterAvatar'
 import { getExpressionParameters } from './expressionMapper'
 import type { HermesEmotion } from '../bridge/messageTypes'
+import type { CharacterAvatarState } from './CharacterAvatar'
 
 type Live2DInternalModel = {
   coreModel?: {
@@ -28,7 +30,9 @@ const MODEL_URL = new URL('model3.json', window.location.href).href
 export class Live2DRenderer {
   private app: Application<HTMLCanvasElement> | null = null
   private model: Live2DDisplayModel | null = null
-  private fallback: HTMLDivElement | null = null
+  private fallback: CharacterAvatar | null = null
+  private fallbackEmotion: HermesEmotion = 'neutral'
+  private fallbackSpeaking = false
   private idleFrame = 0
   private gpuFailed = false
 
@@ -92,6 +96,8 @@ export class Live2DRenderer {
   }
 
   setExpression(name: HermesEmotion): void {
+    this.fallbackEmotion = name
+    this.updateFallbackState()
     if (!this.model) {
       this.host.dataset.emotion = name
       return
@@ -108,6 +114,12 @@ export class Live2DRenderer {
     this.applyParameters(getExpressionParameters(name))
   }
 
+  setCharacterState(emotion: HermesEmotion, isSpeaking = false): void {
+    this.fallbackEmotion = emotion
+    this.fallbackSpeaking = isSpeaking
+    this.updateFallbackState()
+  }
+
   setMouthOpen(value: number): void {
     this.setParameter('ParamMouthOpenY', Math.max(0, Math.min(1, value)))
   }
@@ -119,7 +131,7 @@ export class Live2DRenderer {
   destroy(): void {
     cancelAnimationFrame(this.idleFrame)
     this.app?.destroy(true, { children: true, texture: true, baseTexture: true })
-    this.fallback?.remove()
+    this.fallback?.destroy()
   }
 
   private computeModelScale(): number {
@@ -149,9 +161,28 @@ export class Live2DRenderer {
 
   private showFallback(): void {
     if (this.fallback) return
-    this.fallback = document.createElement('div')
-    this.fallback.className = 'fallback-avatar'
-    this.fallback.textContent = '✦'
-    this.host.appendChild(this.fallback)
+    this.fallback = new CharacterAvatar(this.host)
+    this.updateFallbackState()
+  }
+
+  private updateFallbackState(): void {
+    this.fallback?.setState(this.mapCharacterState(this.fallbackEmotion, this.fallbackSpeaking))
+  }
+
+  private mapCharacterState(emotion: HermesEmotion, isSpeaking: boolean): CharacterAvatarState {
+    if (isSpeaking) return 'talking'
+
+    switch (emotion) {
+      case 'happy':
+        return 'happy'
+      case 'thinking':
+        return 'thinking'
+      case 'annoyed':
+        return 'wondering'
+      case 'neutral':
+      case 'sad':
+      default:
+        return 'idle'
+    }
   }
 }
