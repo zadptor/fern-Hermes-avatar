@@ -7,7 +7,6 @@ const store = useAvatarStore()
 const { currentMessage, completedAt, isThinking, isSpeaking, mode, volume, emotion } = storeToRefs(store)
 const isVisible = ref(false)
 const revealed = ref(0)
-const revealTimer = ref(0)
 
 let hideTimer = 0
 let speakPulseCount = 0
@@ -32,7 +31,9 @@ const bubbleKind = computed<'thinking' | 'speech' | 'shout' | 'whisper'>(() => {
   return 'speech'
 })
 
-const thinkerDots = ref(['', '', ''])
+// ── Thinking dots animation ────────────────────────────────────────────
+
+const thinkerPhase = ref(0)
 let thinkerTimer = 0
 
 watch(isThinking, (v) => {
@@ -42,18 +43,20 @@ watch(isThinking, (v) => {
 
 function startThinkerDots(): void {
   stopThinkerDots()
-  let i = 0
+  thinkerPhase.value = 0
   thinkerTimer = window.setInterval(() => {
-    i = (i + 1) % 4
-    thinkerDots.value = ['.', '..', '...', '']
-    thinkerDots.value = thinkerDots.value.map((_, idx) => (i > idx ? '.' : ' '))
-  }, 380)
+    thinkerPhase.value = (thinkerPhase.value + 1) % 4
+  }, 420)
 }
 
 function stopThinkerDots(): void {
   window.clearInterval(thinkerTimer)
-  thinkerDots.value = ['', '', '']
+  thinkerPhase.value = 0
 }
+
+const thinkerLabel = computed(() => {
+  return 'Thinking' + '.'.repeat(thinkerPhase.value)
+})
 
 // ── Typing reveal during speaking ───────────────────────────────────────
 
@@ -117,40 +120,76 @@ onBeforeUnmount(() => {
       :class="[bubbleKind, emotion]"
       aria-live="polite"
     >
-      <!-- thinking bubble: cloud shape, no tail -->
+      <!-- thinking bubble: manga-style cloud + bubble trail -->
       <template v-if="bubbleKind === 'thinking'">
-        <svg class="cloud-path" viewBox="0 0 200 100" preserveAspectRatio="none">
+        <!-- Bubble trail: three progressively smaller circles floating up to the cloud -->
+        <svg class="thought-trail" viewBox="0 0 90 60" aria-hidden="true">
+          <circle cx="45" cy="50" r="10" class="trail-circle" />
+          <circle cx="45" cy="30" r="7" class="trail-circle" />
+          <circle cx="45" cy="14" r="4" class="trail-circle" />
+        </svg>
+
+        <svg class="cloud-shape" viewBox="0 0 240 120" preserveAspectRatio="none" aria-hidden="true">
+          <!-- Main cloud path (solid fill + thick stroke) -->
           <path
-            d="M 30 85
-               Q 18 85 14 74
-               Q 6 72 8 60
-               Q 0 52 8 42
-               Q 4 30 16 28
-               Q 18 14 32 14
-               Q 38 4 54 6
-               Q 62 0 78 6
-               Q 88 0 102 6
-               Q 112 2 124 10
-               Q 134 4 146 12
-               Q 160 8 170 18
-               Q 180 14 188 24
-               Q 196 22 198 34
-               Q 202 44 194 54
-               Q 200 62 192 72
-               Q 198 80 186 82
-               Q 180 90 168 86
-               Q 156 94 142 88
-               Q 130 94 116 88
-               Q 102 94 90 88
-               Q 78 94 66 88
-               Q 54 94 42 88
-               Z"
+            d="M 36 102
+               Q 22 102 17 89
+               Q 7 86 10 72
+               Q 0 62 10 50
+               Q 5 36 19 34
+               Q 22 17 38 17
+               Q 46 5 65 7
+               Q 74 0 94 7
+               Q 106 0 122 7
+               Q 134 2 149 12
+               Q 161 5 175 14
+               Q 192 10 204 22
+               Q 214 17 226 29
+               Q 236 26 238 41
+               Q 242 53 232 65
+               Q 240 74 230 86
+               Q 236 96 223 98
+               Q 216 108 202 103
+               Q 188 113 170 106
+               Q 156 113 138 106
+               Q 122 113 108 106
+               Q 94 113 80 106
+               Q 66 113 52 106
+               Q 40 113 36 102 Z"
             class="cloud-fill"
           />
+          <!-- Second offset path for sketchy doubled-line manga effect -->
+          <path
+            d="M 38 104
+               Q 20 104 15 91
+               Q 5 88 8 74
+               Q -2 64 8 52
+               Q 3 38 17 36
+               Q 24 19 40 19
+               Q 48 7 67 9
+               Q 76 2 96 9
+               Q 108 2 124 9
+               Q 136 4 151 14
+               Q 163 7 177 16
+               Q 194 12 206 24
+               Q 216 19 228 31
+               Q 238 28 240 43
+               Q 244 55 234 67
+               Q 242 76 232 88
+               Q 238 98 225 100
+               Q 218 110 204 105
+               Q 190 115 172 108
+               Q 158 115 140 108
+               Q 124 115 110 108
+               Q 96 115 82 108
+               Q 68 115 54 108
+               Q 42 115 38 104 Z"
+            class="cloud-sketch"
+          />
         </svg>
+
         <span class="think-text">
-          <span class="text-content">{{ displayText || 'Thinking' }}</span>
-          <span class="thinker-dots"><span v-for="(d, i) in thinkerDots" :key="i">{{ d }}</span></span>
+          <span class="text-content">{{ thinkerLabel }}</span>
         </span>
       </template>
 
@@ -204,40 +243,74 @@ onBeforeUnmount(() => {
 
 /* ── THINKING bubble ──────────────────────────────────────────────────── */
 .chat-bubble.thinking {
-  padding: 18px 22px;
-  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  padding: 24px 32px;
   font-size: 14px;
   line-height: 1.5;
 }
 
-.cloud-path {
+/* Thought trail — three circles floating up from the character's head */
+.thought-trail {
+  position: absolute;
+  bottom: -50px;
+  left: 20%;
+  width: 60px;
+  height: 44px;
+  z-index: 0;
+}
+
+.trail-circle {
+  fill: white;
+  stroke: #1a1a1a;
+  stroke-width: 2.5;
+  paint-order: stroke fill;
+}
+
+/* Cloud shape SVG */
+.cloud-shape {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   z-index: 0;
   pointer-events: none;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.12));
 }
 
+/* Solid white fill, thick manga stroke */
 .cloud-fill {
-  fill: rgba(212, 224, 245, 0.78);
-  stroke: rgba(185, 200, 230, 0.5);
-  stroke-width: 1.5;
-  filter: drop-shadow(0 6px 16px rgba(80, 100, 140, 0.12));
+  fill: #ffffff;
+  stroke: #1a1a1a;
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  paint-order: stroke fill;
 }
 
+/* Sketchy doubled-line overlay — slightly offset for hand-drawn feel */
+.cloud-sketch {
+  fill: none;
+  stroke: #1a1a1a;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+
+/* Text inside the thinking bubble */
 .think-text {
   position: relative;
   z-index: 1;
-  color: #3a4a6a;
-  font-style: italic;
-}
-
-.thinker-dots {
-  display: inline;
+  color: #1a1a1a;
   font-weight: 700;
-  letter-spacing: 1px;
-  color: #5a7aaa;
+  font-size: 16px;
+  font-style: normal;
+  text-align: center;
+  letter-spacing: 0.5px;
+  font-family: 'Hiragino Sans', 'Noto Sans', 'Segoe UI', sans-serif;
 }
 
 /* ── SPEECH bubble ────────────────────────────────────────────────────── */
