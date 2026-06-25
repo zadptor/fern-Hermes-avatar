@@ -4,10 +4,9 @@ import '@pixi/display'
 import '@pixi/sprite'
 import { extensions } from '@pixi/extensions'
 import { Ticker, TickerPlugin } from '@pixi/ticker'
-import { CharacterAvatar } from './CharacterAvatar'
 import { getExpressionParameters } from './expressionMapper'
 import type { HermesEmotion } from '../bridge/messageTypes'
-import type { CharacterAvatarState } from './CharacterAvatar'
+import type { AvatarDefinition } from './avatarCatalog'
 
 type Live2DInternalModel = {
   coreModel?: {
@@ -40,17 +39,36 @@ type Live2DDisplayModel = {
   destroy?: () => void
 }
 
-const MODEL_URL = new URL(
-  'live2d/models/hiyori_free_zh/runtime/hiyori_free_t08.model3.json',
-  window.location.href
-).href
+type CubismCoreGlobal = {
+  Memory?: {
+    initializeAmountOfMemory?: (size: number) => void
+  }
+}
+
+const PARAMETER_ALIASES: Record<string, string[]> = {
+  ParamAngleX: ['PARAM_ANGLE_X'],
+  ParamAngleY: ['PARAM_ANGLE_Y'],
+  ParamAngleZ: ['PARAM_ANGLE_Z'],
+  ParamBodyAngleX: ['PARAM_BODY_ANGLE_X'],
+  ParamBodyAngleY: ['PARAM_BODY_ANGLE_Y'],
+  ParamBodyAngleZ: ['PARAM_BODY_ANGLE_Z'],
+  ParamBreath: ['PARAM_BREATH'],
+  ParamEyeBallX: ['PARAM_EYE_BALL_X'],
+  ParamEyeBallY: ['PARAM_EYE_BALL_Y'],
+  ParamEyeLOpen: ['PARAM_EYE_L_OPEN'],
+  ParamEyeROpen: ['PARAM_EYE_R_OPEN'],
+  ParamMouthOpenY: ['PARAM_MOUTH_OPEN_Y']
+}
+
+declare global {
+  interface Window {
+    Live2DCubismCore?: CubismCoreGlobal
+  }
+}
 
 export class Live2DRenderer {
   private app: Application<HTMLCanvasElement> | null = null
   private model: Live2DDisplayModel | null = null
-  private fallback: CharacterAvatar | null = null
-  private fallbackEmotion: HermesEmotion = 'neutral'
-  private fallbackSpeaking = false
   private idleFrame = 0
   private live2dFrame = 0
   private gpuFailed = false
@@ -63,6 +81,7 @@ export class Live2DRenderer {
   private modelNaturalHeight = 0
   private lastFrameAt = 0
   private startedAt = 0
+  private destroyed = false
   private gaze = { x: 0, y: 0, targetX: 0, targetY: 0, nextAt: 0 }
   private blink = {
     phase: 'idle' as 'idle' | 'closing' | 'opening',
@@ -85,32 +104,37 @@ export class Live2DRenderer {
     } catch {
       this.gpuFailed = true
       this.app = null
-      this.showFallback()
     }
   }
 
-  async load(): Promise<void> {
+  async load(avatar: AvatarDefinition): Promise<void> {
+    const modelUrl = new URL(avatar.modelPath, window.location.href).href
+    if (this.destroyed) return
+
     if (this.gpuFailed || !this.app) {
-      this.showFallback()
-      return
+      throw new Error('WebGL renderer could not be initialized.')
     }
 
-    // Check if a Live2D model file exists
     try {
-      const response = await fetch(MODEL_URL, { method: 'HEAD' })
-      if (!response.ok) throw new Error('No model file')
-    } catch {
-      this.showFallback()
-      return
+      const response = await fetch(modelUrl, { method: 'HEAD' })
+      if (this.destroyed) return
+      if (!response.ok) throw new Error(`Model file was not found: ${avatar.modelPath}`)
+    } catch (err) {
+      if (err instanceof Error) throw err
+      throw new Error(`Model file was not found: ${avatar.modelPath}`)
     }
 
-    // Dynamically import pixi-live2d-display (requires Cubism 4 SDK runtime)
     try {
+      window.Live2DCubismCore?.Memory?.initializeAmountOfMemory?.(256 * 1024 * 1024)
       const { Live2DFactory, Live2DModel } = await import('pixi-live2d-display/cubism4')
       Live2DModel.registerTicker(Ticker)
       void Live2DFactory
 
-      const raw = await Live2DModel.from(MODEL_URL, { autoInteract: false })
+      const raw = await Live2DModel.from(modelUrl, { autoInteract: false })
+      if (this.destroyed) {
+        raw.destroy()
+        return
+      }
       this.model = raw as unknown as Live2DDisplayModel
       this.model.anchor.set(0.5, 0.5)
       this.model.scale.set(1)
@@ -121,8 +145,14 @@ export class Live2DRenderer {
       this.tryMotion(['Idle', 'idle'])
       this.startIdleMotion()
     } catch (err) {
-      console.warn('[Live2D] Could not load Live2D model (Cubism SDK may be missing):', err)
-      this.showFallback()
+      console.warn('[Live2D] Could not load Live2D model:', err)
+      if (err instanceof Error && err.message === 'Unknown error') {
+        throw new Error(
+          `Could not create the Live2D core model for ${avatar.name}. The bundled renderer may not support this model's Cubism features.`
+        )
+      }
+      if (err instanceof Error) throw err
+      throw new Error(`Could not load ${avatar.name}.`)
     }
   }
 
@@ -132,9 +162,7 @@ export class Live2DRenderer {
   }
 
   setExpression(name: HermesEmotion): void {
-    this.fallbackEmotion = name
     this.expressionTargets = getExpressionParameters(name)
-    this.updateFallbackState()
     if (!this.model) {
       this.host.dataset.emotion = name
       return
@@ -153,16 +181,13 @@ export class Live2DRenderer {
   }
 
   setCharacterState(emotion: HermesEmotion, isSpeaking = false): void {
-    this.fallbackEmotion = emotion
-    this.fallbackSpeaking = isSpeaking
     this.isSpeaking = isSpeaking
     if (!isSpeaking) this.mouthTarget = 0
-    this.updateFallbackState()
+    void emotion
   }
 
   setMouthOpen(value: number): void {
     this.mouthTarget = Math.max(0, Math.min(1, value))
-    this.fallback?.setMouthOpen(this.mouthTarget)
   }
 
   playMotion(name: string): void {
@@ -170,10 +195,10 @@ export class Live2DRenderer {
   }
 
   destroy(): void {
+    this.destroyed = true
     cancelAnimationFrame(this.idleFrame)
     cancelAnimationFrame(this.live2dFrame)
     this.app?.destroy(true, { children: true, texture: true, baseTexture: true })
-    this.fallback?.destroy()
   }
 
   private fitModelToStage(): void {
@@ -200,6 +225,9 @@ export class Live2DRenderer {
 
   private setParameter(id: string, value: number): void {
     this.model?.internalModel?.coreModel?.setParameterValueById?.(id, value)
+    for (const alias of PARAMETER_ALIASES[id] ?? []) {
+      this.model?.internalModel?.coreModel?.setParameterValueById?.(alias, value)
+    }
   }
 
   private startIdleMotion(): void {
@@ -349,33 +377,6 @@ export class Live2DRenderer {
       } catch {
         // Try the next common Cubism motion group name.
       }
-    }
-  }
-
-  private showFallback(): void {
-    if (this.fallback) return
-    this.fallback = new CharacterAvatar(this.host)
-    this.updateFallbackState()
-  }
-
-  private updateFallbackState(): void {
-    this.fallback?.setState(this.mapCharacterState(this.fallbackEmotion, this.fallbackSpeaking))
-  }
-
-  private mapCharacterState(emotion: HermesEmotion, isSpeaking: boolean): CharacterAvatarState {
-    if (isSpeaking) return 'talking'
-
-    switch (emotion) {
-      case 'happy':
-        return 'happy'
-      case 'thinking':
-        return 'thinking'
-      case 'annoyed':
-        return 'wondering'
-      case 'neutral':
-      case 'sad':
-      default:
-        return 'idle'
     }
   }
 }

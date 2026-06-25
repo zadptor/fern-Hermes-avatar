@@ -14,7 +14,6 @@ Hermes Agent -> WebSocket ws://localhost:9120 -> fern-Hermes-avatar overlay
 - PixiJS v7 modular renderer wired for Cubism 4 Live2D models.
 - Runtime avatar animation for idle gaze, blinking, breathing, expression changes, and speech mouth movement.
 - Speech bubble, voice/speaking visualizer, expression mapping, and lip-sync smoothing.
-- Animated fallback avatar when no Live2D model has been added.
 
 ## Install
 
@@ -48,17 +47,20 @@ Linux builds an AppImage. Windows builds an NSIS installer.
 
 ## Live2D Model
 
-The app currently loads the bundled Hiyori Cubism 4 sample model from:
+The app can select between bundled Live2D sample models:
 
 ```text
-src/assets/live2d/models/hiyori_free_zh/runtime/hiyori_free_t08.model3.json
+src/assets/live2d/models/hiyori_free/runtime/hiyori_free_t08.model3.json
+src/assets/live2d/models/chitose/runtime/chitose.model3.json
 ```
 
-The model's referenced textures, `.moc3`, physics, and motion files must stay in the paths expected by the `.model3.json` file.
+Each model's referenced textures, `.moc3`, physics, expressions, and motion files must stay in the paths expected by the `.model3.json` file.
 
-Cubism 4 rendering also requires `src/assets/vendor/live2dcubismcore.min.js`, which is loaded before the renderer entrypoint. The bundled sample model includes its original `ReadMe.txt`; review that file and the Live2D sample data license before redistributing.
+Cubism rendering also requires `src/assets/vendor/live2dcubismcore.min.js`, which is loaded before the renderer entrypoint. The bundled sample models include their original `ReadMe.txt`; review those files and the Live2D sample data license before redistributing.
 
-If the model file is missing or fails to load, the app uses an animated fallback avatar so the bridge can still be tested.
+If the model file is missing or fails to load, the avatar stage remains empty and the renderer logs the load error.
+
+Chitose is a Cubism 3 sample. The current Cubism 4 renderer is used for both bundled models.
 
 ## Hermes Event Contract
 

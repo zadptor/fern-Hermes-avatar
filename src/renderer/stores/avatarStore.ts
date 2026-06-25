@@ -1,9 +1,13 @@
 import { defineStore } from 'pinia'
 import type { HermesEmotion, HermesOverlayEvent } from '../bridge/messageTypes'
+import { defaultAvatarId, getAvatarDefinition } from '../live2d/avatarCatalog'
+import type { AvatarId } from '../live2d/avatarCatalog'
 
 type HermesMode = 'text' | 'voice'
+const AVATAR_STORAGE_KEY = 'hermes-avatar-id'
 
 interface AvatarState {
+  currentAvatarId: AvatarId
   currentMessage: string
   emotion: HermesEmotion
   isSpeaking: boolean
@@ -17,6 +21,7 @@ interface AvatarState {
 
 export const useAvatarStore = defineStore('avatar', {
   state: (): AvatarState => ({
+    currentAvatarId: readStoredAvatarId(),
     currentMessage: '',
     emotion: 'neutral',
     isSpeaking: false,
@@ -27,7 +32,14 @@ export const useAvatarStore = defineStore('avatar', {
     isConnected: false,
     completedAt: 0
   }),
+  getters: {
+    currentAvatar: (state) => getAvatarDefinition(state.currentAvatarId)
+  },
   actions: {
+    setAvatar(id: AvatarId) {
+      this.currentAvatarId = id
+      window.localStorage.setItem(AVATAR_STORAGE_KEY, id)
+    },
     setConnection(isConnected: boolean) {
       this.isConnected = isConnected
     },
@@ -68,3 +80,13 @@ export const useAvatarStore = defineStore('avatar', {
     }
   }
 })
+
+function readStoredAvatarId(): AvatarId {
+  const stored = window.localStorage.getItem(AVATAR_STORAGE_KEY)
+  if (stored === 'hiyori' || stored === 'chitose') return stored
+  if (stored === 'ren_foster') {
+    window.localStorage.setItem(AVATAR_STORAGE_KEY, 'chitose')
+    return 'chitose'
+  }
+  return defaultAvatarId
+}
