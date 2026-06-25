@@ -12,8 +12,9 @@ Hermes Agent -> WebSocket ws://localhost:9120 -> fern-Hermes-avatar overlay
 - Local WebSocket server on port `9120` for Hermes overlay events.
 - Vue 3 renderer with Pinia state.
 - PixiJS v7 modular renderer wired for Cubism 4 Live2D models.
+- Runtime avatar animation for idle gaze, blinking, breathing, expression changes, and speech mouth movement.
 - Speech bubble, voice/speaking visualizer, expression mapping, and lip-sync smoothing.
-- Graceful placeholder avatar when no Live2D model has been added.
+- Animated fallback avatar when no Live2D model has been added.
 
 ## Install
 
@@ -47,15 +48,17 @@ Linux builds an AppImage. Windows builds an NSIS installer.
 
 ## Live2D Model
 
-Put your Cubism 4 model in:
+The app currently loads the bundled Hiyori Cubism 4 sample model from:
 
 ```text
-src/assets/model3.json
+src/assets/live2d/models/hiyori_free_zh/runtime/hiyori_free_t08.model3.json
 ```
 
-Keep the model's referenced textures, `.moc3`, expressions, physics, pose, and motion files in the paths expected by the `.model3.json` file.
+The model's referenced textures, `.moc3`, physics, and motion files must stay in the paths expected by the `.model3.json` file.
 
-If the file is missing, the app uses a placeholder avatar so the bridge can still be tested.
+Cubism 4 rendering also requires `src/assets/vendor/live2dcubismcore.min.js`, which is loaded before the renderer entrypoint. The bundled sample model includes its original `ReadMe.txt`; review that file and the Live2D sample data license before redistributing.
+
+If the model file is missing or fails to load, the app uses an animated fallback avatar so the bridge can still be tested.
 
 ## Hermes Event Contract
 
@@ -83,5 +86,3 @@ Some `pixi-live2d-display` installs can incorrectly detect `items_pinned_to_mode
 ```ts
 !file.name.endsWith("items_pinned_to_model.json")
 ```
-
-The app itself does not depend on AIRI code or agent internals.

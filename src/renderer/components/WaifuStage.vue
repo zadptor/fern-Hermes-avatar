@@ -55,7 +55,7 @@ watch(isSpeaking, (speaking) => {
 <style scoped>
 .waifu-stage {
   position: absolute;
-  inset: 100px 0 34px;
+  inset: 36px 0 64px;
   display: grid;
   place-items: center;
   overflow: hidden;

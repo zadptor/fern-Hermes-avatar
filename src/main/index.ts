@@ -3,9 +3,10 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createHermesWebSocketServer, type HermesWebSocketServer } from './websocket-server.js'
 
-// WSL / headless: force software rendering so WebGL/PixiJS don't crash
+// WSL / headless: allow SwiftShader software WebGL so PixiJS/Live2D can render.
 app.commandLine.appendSwitch('disable-gpu')
-app.commandLine.appendSwitch('disable-software-rasterizer')
+app.commandLine.appendSwitch('ignore-gpu-blocklist')
+app.commandLine.appendSwitch('enable-unsafe-swiftshader')
 app.disableHardwareAcceleration()
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
@@ -16,8 +17,8 @@ let isQuitting = false
 
 function createWindow(): void {
   const display = screen.getPrimaryDisplay()
-  const width = 400
-  const height = 600
+  const width = 560
+  const height = 820
   const margin = 24
   const { x, y, width: workWidth, height: workHeight } = display.workArea
 
