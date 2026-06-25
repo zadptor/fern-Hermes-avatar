@@ -134,11 +134,11 @@ function generateSpeak(text: string): Promise<{ wslPath: string; winMntWav: stri
         }
         logRuntime(`[tts] mp3 written: ${wslPath}`)
 
-        // Convert MP3 → WAV with ffmpeg
+        // Convert MP3 → WAV with ffmpeg (fast, mono, speech-optimized)
         execFile(
           ffmpegBin,
-          ['-y', '-i', wslPath, '-acodec', 'pcm_s16le', '-ar', '22050', wavPath],
-          { timeout: 10_000 },
+          ['-y', '-i', wslPath, '-acodec', 'pcm_s16le', '-ar', '16000', '-ac', '1', wavPath],
+          { timeout: 5_000 },
           (ffErr) => {
             if (ffErr) {
               logRuntime(`[tts] ffmpeg conversion failed: ${ffErr}`)
@@ -178,15 +178,22 @@ function generateSpeak(text: string): Promise<{ wslPath: string; winMntWav: stri
 
 // ── Play audio through Windows speakers via PowerShell SoundPlayer ─────
 
+let playbackQueue: Promise<void> = Promise.resolve()
+
 function playOnWindows(winWav: string): void {
-  logRuntime(`[play] playing WAV: ${winWav}`)
-  // SoundPlayer plays WAV natively — completely headless, synchronous, no window
-  execFile('powershell.exe', [
-    '-NoProfile', '-WindowStyle', 'Hidden', '-Command',
-    `(New-Object Media.SoundPlayer '${winWav}').PlaySync()`
-  ], { timeout: 60_000 }, (psErr) => {
-    if (psErr) logRuntime(`[play] playback error: ${psErr}`)
-    else logRuntime(`[play] playback complete`)
+  // Serialize: queue this playback after any previous one completes
+  playbackQueue = playbackQueue.then(() => {
+    return new Promise<void>((resolve) => {
+      logRuntime(`[play] playing WAV: ${winWav}`)
+      execFile('powershell.exe', [
+        '-NoProfile', '-WindowStyle', 'Hidden', '-Command',
+        `(New-Object Media.SoundPlayer '${winWav}').PlaySync()`
+      ], { timeout: 60_000 }, (psErr) => {
+        if (psErr) logRuntime(`[play] playback error: ${psErr}`)
+        else logRuntime(`[play] playback complete`)
+        resolve()
+      })
+    })
   })
 }
 
@@ -206,9 +213,11 @@ app.whenReady().then(() => {
   ipcMain.handle('hermes-get-status', () => hermesServer?.getStatus() ?? { isListening: false, clients: 0 })
 
   ipcMain.handle('hermes-speak', async (_event, text: string) => {
-    logRuntime(`[speak] requested: "${text.slice(0, 80)}..."`)
+    // Cap text length for faster TTS generation
+    const speakText = text.length > 300 ? text.slice(0, 300) + '...' : text
+    logRuntime(`[speak] requested: "${speakText.slice(0, 80)}..."`)
     try {
-      const { wslPath, winWav } = await generateSpeak(text)
+      const { wslPath, winWav } = await generateSpeak(speakText)
       playOnWindows(winWav)
       const protocolUrl = `hermes-audio://localhost${wslPath}`
       if (mainWindow && !mainWindow.isDestroyed()) {
