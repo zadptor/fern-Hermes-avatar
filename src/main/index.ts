@@ -3,6 +3,11 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createHermesWebSocketServer, type HermesWebSocketServer } from './websocket-server.js'
 
+// WSL / headless: force software rendering so WebGL/PixiJS don't crash
+app.commandLine.appendSwitch('disable-gpu')
+app.commandLine.appendSwitch('disable-software-rasterizer')
+app.disableHardwareAcceleration()
+
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 let mainWindow: BrowserWindow | null = null

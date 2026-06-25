@@ -27,25 +27,32 @@ Live2DModel.registerTicker(Ticker)
 void Live2DFactory
 
 export class Live2DRenderer {
-  private app: Application<HTMLCanvasElement>
+  private app: Application<HTMLCanvasElement> | null = null
   private model: Live2DDisplayModel | null = null
   private fallback: HTMLDivElement | null = null
   private idleFrame = 0
+  private gpuFailed = false
 
   constructor(private readonly host: HTMLElement) {
-    this.app = new Application<HTMLCanvasElement>({
-      resizeTo: host,
-      backgroundAlpha: 0,
-      antialias: true,
-      autoDensity: true,
-      resolution: Math.min(window.devicePixelRatio, 2)
-    })
-
-    this.host.appendChild(this.app.view)
-    this.app.view.className = 'live2d-canvas'
+    try {
+      this.app = new Application<HTMLCanvasElement>({
+        resizeTo: host,
+        backgroundAlpha: 0,
+        antialias: true,
+        autoDensity: true,
+        resolution: Math.min(window.devicePixelRatio, 2)
+      })
+      this.host.appendChild(this.app.view)
+      this.app.view.className = 'live2d-canvas'
+    } catch {
+      this.gpuFailed = true
+      this.app = null
+      this.showFallback()
+    }
   }
 
   async load(): Promise<void> {
+    if (this.gpuFailed) return
     try {
       const response = await fetch(MODEL_URL, { method: 'HEAD' })
       if (!response.ok) throw new Error('No Live2D model found.')
@@ -55,7 +62,7 @@ export class Live2DRenderer {
       this.model.anchor.set(0.5, 0.5)
       this.model.scale.set(this.computeModelScale())
       this.model.position.set(this.host.clientWidth / 2, this.host.clientHeight * 0.58)
-      this.app.stage.addChild(this.model as any)
+      this.app?.stage.addChild(this.model as any)
       this.startIdleMotion()
     } catch {
       this.showFallback()
@@ -98,7 +105,7 @@ export class Live2DRenderer {
 
   destroy(): void {
     cancelAnimationFrame(this.idleFrame)
-    this.app.destroy(true, { children: true, texture: true, baseTexture: true })
+    this.app?.destroy(true, { children: true, texture: true, baseTexture: true })
     this.fallback?.remove()
   }
 
