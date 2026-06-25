@@ -50,11 +50,12 @@ export class Live2DRenderer {
       const response = await fetch(MODEL_URL, { method: 'HEAD' })
       if (!response.ok) throw new Error('No Live2D model found.')
 
-      this.model = (await Live2DModel.from(MODEL_URL, { autoInteract: false })) as Live2DDisplayModel
+      const raw = await Live2DModel.from(MODEL_URL, { autoInteract: false })
+      this.model = raw as unknown as Live2DDisplayModel
       this.model.anchor.set(0.5, 0.5)
       this.model.scale.set(this.computeModelScale())
       this.model.position.set(this.host.clientWidth / 2, this.host.clientHeight * 0.58)
-      this.app.stage.addChild(this.model)
+      this.app.stage.addChild(this.model as any)
       this.startIdleMotion()
     } catch {
       this.showFallback()

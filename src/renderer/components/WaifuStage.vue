@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAvatarStore } from '../stores/avatarStore'
 import { Live2DRenderer } from '../live2d/Live2DRenderer'
@@ -7,7 +7,7 @@ import { LipSyncController } from '../live2d/lipSync'
 
 const stage = ref<HTMLElement | null>(null)
 const store = useAvatarStore()
-const { emotion, volume, phoneme, isSpeaking } = storeToRefs(store)
+const { emotion, volume, isSpeaking } = storeToRefs(store)
 
 let renderer: Live2DRenderer | null = null
 let lipSync: LipSyncController | null = null
@@ -33,7 +33,11 @@ onBeforeUnmount(() => {
 })
 
 watch(emotion, (next) => renderer?.setExpression(next))
-watch([volume, phoneme], ([nextVolume, nextPhoneme]) => lipSync?.setInput(nextVolume, nextPhoneme))
+watchEffect(() => {
+  const v = volume.value
+  const p = store.phoneme
+  lipSync?.setInput(v, p ?? undefined)
+})
 watch(isSpeaking, (speaking) => {
   if (!speaking) lipSync?.stop()
 })
