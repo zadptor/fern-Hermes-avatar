@@ -4,189 +4,189 @@
 		{
 			"Id": "ParamAngleX",
 			"GroupId": "ParamGroupFace",
-			"Name": "角度 X"
+			"Name": "Angle X"
 		},
 		{
 			"Id": "ParamAngleY",
 			"GroupId": "ParamGroupFace",
-			"Name": "角度 Y"
+			"Name": "Angle Y"
 		},
 		{
 			"Id": "ParamAngleZ",
 			"GroupId": "ParamGroupFace",
-			"Name": "角度 Z"
+			"Name": "Angle Z"
 		},
 		{
 			"Id": "ParamCheek",
 			"GroupId": "ParamGroupFace",
-			"Name": "脸颊泛红"
+			"Name": "Flush"
 		},
 		{
 			"Id": "ParamEyeLOpen",
 			"GroupId": "ParamGroupEyes",
-			"Name": "左眼 开闭"
+			"Name": "Eye L Open"
 		},
 		{
 			"Id": "ParamEyeLSmile",
 			"GroupId": "ParamGroupEyes",
-			"Name": "左眼 微笑"
+			"Name": "Eye L Smile"
 		},
 		{
 			"Id": "ParamEyeROpen",
 			"GroupId": "ParamGroupEyes",
-			"Name": "右眼 开闭"
+			"Name": "Eye R Open"
 		},
 		{
 			"Id": "ParamEyeRSmile",
 			"GroupId": "ParamGroupEyes",
-			"Name": "右眼 微笑"
+			"Name": "Eye R Smile"
 		},
 		{
 			"Id": "ParamEyeBallX",
 			"GroupId": "ParamGroupEyeballs",
-			"Name": "眼珠 X"
+			"Name": "Eyeball X"
 		},
 		{
 			"Id": "ParamEyeBallY",
 			"GroupId": "ParamGroupEyeballs",
-			"Name": "眼珠 Y"
+			"Name": "Eyeball Y"
 		},
 		{
 			"Id": "ParamBrowLForm",
 			"GroupId": "ParamGroupBrows",
-			"Name": "左眉 变形"
+			"Name": "Brow L Form"
 		},
 		{
 			"Id": "ParamBrowRForm",
 			"GroupId": "ParamGroupBrows",
-			"Name": "右眉 变形"
+			"Name": "Brow R Form"
 		},
 		{
 			"Id": "ParamMouthForm",
 			"GroupId": "ParamGroupMouth",
-			"Name": "嘴 变形"
+			"Name": "Mouth Form"
 		},
 		{
 			"Id": "ParamMouthOpenY",
 			"GroupId": "ParamGroupMouth",
-			"Name": "嘴 开闭"
+			"Name": "Mouth Open"
 		},
 		{
 			"Id": "ParamBodyAngleX",
 			"GroupId": "ParamGroupBody",
-			"Name": "身体的旋转 X"
+			"Name": "Body X"
 		},
 		{
 			"Id": "ParamBodyAngleY",
 			"GroupId": "ParamGroupBody",
-			"Name": "身体的旋转 Y"
+			"Name": "Body Y"
 		},
 		{
 			"Id": "ParamBodyAngleZ",
 			"GroupId": "ParamGroupBody",
-			"Name": "身体的旋转 Z"
+			"Name": "Body Z"
 		},
 		{
 			"Id": "ParamBreath",
 			"GroupId": "ParamGroupBody",
-			"Name": "呼吸"
+			"Name": "Breath"
 		},
 		{
 			"Id": "ParamArmLA",
 			"GroupId": "ParamGroupArms",
-			"Name": "左臂 A"
+			"Name": "Arm L A"
 		},
 		{
 			"Id": "ParamArmRA",
 			"GroupId": "ParamGroupArms",
-			"Name": "右臂 A"
+			"Name": "Arm R A"
 		},
 		{
 			"Id": "ParamBustY",
 			"GroupId": "ParamGroupSway",
-			"Name": "胸部 摇动"
+			"Name": "Bust Bounce"
 		},
 		{
 			"Id": "ParamHairAhoge",
 			"GroupId": "ParamGroupSway",
-			"Name": "头发摇动 呆毛"
+			"Name": "Hair Move Ahoge"
 		},
 		{
 			"Id": "ParamHairFront",
 			"GroupId": "ParamGroupSway",
-			"Name": "头发摇动 前"
+			"Name": "Hair Move Front"
 		},
 		{
 			"Id": "ParamHairSide",
 			"GroupId": "ParamGroupSway",
-			"Name": "头发摇动 侧"
+			"Name": "Hair Move Side"
 		},
 		{
 			"Id": "ParamHairBack",
 			"GroupId": "ParamGroupSway",
-			"Name": "头发摇动 后"
+			"Name": "Hair Move Back"
 		},
 		{
 			"Id": "ParamHairSideUp",
 			"GroupId": "ParamGroupSway",
-			"Name": "辫子的摇动"
+			"Name": "Move Side Up"
 		},
 		{
 			"Id": "ParamRibbon",
 			"GroupId": "ParamGroupSway",
-			"Name": "蝴蝶结的摇动"
+			"Name": "Move Butterfly Tie"
 		},
 		{
 			"Id": "ParamSkirt",
 			"GroupId": "ParamGroupSway",
-			"Name": "短裙的摇动"
+			"Name": "Move Skirt"
 		},
 		{
 			"Id": "ParamSideUpRibbon",
 			"GroupId": "ParamGroupSway",
-			"Name": "发饰的摇动"
+			"Name": "Move Side Up Ribbon"
 		}
 	],
 	"ParameterGroups": [
 		{
 			"Id": "ParamGroupFace",
 			"GroupId": "",
-			"Name": "脸"
+			"Name": "Face"
 		},
 		{
 			"Id": "ParamGroupEyes",
 			"GroupId": "",
-			"Name": "眼睛"
+			"Name": "Eye"
 		},
 		{
 			"Id": "ParamGroupEyeballs",
 			"GroupId": "",
-			"Name": "眼珠"
+			"Name": "Eyeball"
 		},
 		{
 			"Id": "ParamGroupBrows",
 			"GroupId": "",
-			"Name": "眉毛"
+			"Name": "Brow"
 		},
 		{
 			"Id": "ParamGroupMouth",
 			"GroupId": "",
-			"Name": "嘴"
+			"Name": "Mouth"
 		},
 		{
 			"Id": "ParamGroupBody",
 			"GroupId": "",
-			"Name": "身体"
+			"Name": "Body"
 		},
 		{
 			"Id": "ParamGroupArms",
 			"GroupId": "",
-			"Name": "手臂"
+			"Name": "Arm"
 		},
 		{
 			"Id": "ParamGroupSway",
 			"GroupId": "",
-			"Name": "摇动"
+			"Name": "Move"
 		}
 	],
 	"Parts": [
@@ -196,67 +196,67 @@
 		},
 		{
 			"Id": "PartCheek",
-			"Name": "脸颊"
+			"Name": "Cheek"
 		},
 		{
 			"Id": "PartBrow",
-			"Name": "眉毛"
+			"Name": "Brow"
 		},
 		{
 			"Id": "PartEye",
-			"Name": "眼睛"
+			"Name": "Eye"
 		},
 		{
 			"Id": "PartNose",
-			"Name": "鼻子"
+			"Name": "Nose"
 		},
 		{
 			"Id": "PartMouth",
-			"Name": "口"
+			"Name": "Mouth"
 		},
 		{
 			"Id": "PartFace",
-			"Name": "脸"
+			"Name": "Face"
 		},
 		{
 			"Id": "PartEar",
-			"Name": "耳朵"
+			"Name": "Ear"
 		},
 		{
 			"Id": "PartHairSide",
-			"Name": "侧发"
+			"Name": "Hair Side"
 		},
 		{
 			"Id": "PartHairFront",
-			"Name": "前发"
+			"Name": "Front Hair"
 		},
 		{
 			"Id": "PartHairBack",
-			"Name": "后发"
+			"Name": "Back Hair"
 		},
 		{
 			"Id": "PartNeck",
-			"Name": "脖子"
+			"Name": "Neck"
 		},
 		{
 			"Id": "PartBody",
-			"Name": "身体"
+			"Name": "Body"
 		},
 		{
 			"Id": "PartArmA",
-			"Name": "手臂A"
+			"Name": "Arm A"
 		},
 		{
 			"Id": "PartBackground",
-			"Name": "背景"
+			"Name": "Background"
 		},
 		{
 			"Id": "PartSketch",
-			"Name": "[参考图]"
+			"Name": "[Guide Image]"
 		},
 		{
 			"Id": "PartEyeBall",
-			"Name": "眼珠"
+			"Name": "Eyeball"
 		}
 	],
 	"CombinedParameters": [
