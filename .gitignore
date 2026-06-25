@@ -3,6 +3,8 @@ dist/
 dist-node/
 out/
 release/
+.idea/
+.agents/
 *.log
 .DS_Store
 *.tsbuildinfo
