@@ -1,0 +1,21 @@
+appId: com.hermes.fern-avatar
+productName: fern-Hermes-avatar
+directories:
+  output: release
+files:
+  - dist/**
+  - resources/**
+  - package.json
+asar: true
+linux:
+  target:
+    - AppImage
+  category: Utility
+  icon: resources/icon.png
+win:
+  target:
+    - nsis
+  icon: resources/icon.png
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
