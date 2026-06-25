@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, screen } from 'electron'
+import { appendFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createHermesWebSocketServer, type HermesWebSocketServer } from './websocket-server.js'
@@ -14,6 +15,18 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 let mainWindow: BrowserWindow | null = null
 let hermesServer: HermesWebSocketServer | null = null
 let isQuitting = false
+
+function logRuntime(message: string): void {
+  const line = `${new Date().toISOString()} ${message}\n`
+  try {
+    const logDir = join(app.getPath('userData'), 'logs')
+    mkdirSync(logDir, { recursive: true })
+    appendFileSync(join(logDir, 'runtime.log'), line)
+  } catch {
+    // Best-effort diagnostics only.
+  }
+  console.log(message)
+}
 
 function createWindow(): void {
   const display = screen.getPrimaryDisplay()
@@ -37,7 +50,7 @@ function createWindow(): void {
     type: 'panel',
     backgroundColor: '#00000000',
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, '../preload/index.mjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false
@@ -54,9 +67,24 @@ function createWindow(): void {
     }
   })
 
+  mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    logRuntime(`[renderer-console:${level}] ${message} (${sourceId}:${line})`)
+  })
+
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    logRuntime(`[renderer-gone] ${JSON.stringify(details)}`)
+  })
+
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    logRuntime(`[renderer-load-failed] ${errorCode} ${errorDescription} ${validatedURL}`)
+  })
+
   hermesServer = createHermesWebSocketServer({
     port: 9120,
-    onEvent: (event) => mainWindow?.webContents.send('hermes-event', event),
+    onEvent: (event) => {
+      logRuntime(`[hermes-event] received: ${JSON.stringify(event)}`)
+      mainWindow?.webContents.send('hermes-event', event)
+    },
     onStatusChange: (status) => mainWindow?.webContents.send('hermes-status', status)
   })
 

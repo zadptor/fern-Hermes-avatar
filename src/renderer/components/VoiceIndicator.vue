@@ -13,7 +13,7 @@ const label = computed(() => {
   return mode.value === 'voice' ? 'Listening...' : 'Ready'
 })
 
-const visible = computed(() => mode.value === 'voice' || isSpeaking.value || isThinking.value || !isConnected.value)
+const visible = computed(() => true)
 const barScale = computed(() => Math.max(0.18, volume.value))
 </script>
 

@@ -3,7 +3,7 @@ productName: fern-Hermes-avatar
 directories:
   output: release
 files:
-  - dist/**
+  - out/**
   - resources/**
   - package.json
 asar: true

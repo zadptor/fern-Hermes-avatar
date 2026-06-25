@@ -9,8 +9,8 @@ export async function startHermesBridge(): Promise<void> {
   }
 
   window.hermes.onEvent((event) => store.handleEvent(event))
-  window.hermes.onStatus((status) => store.setConnection(status.isListening && status.clients > 0))
+  window.hermes.onStatus((status) => store.setConnection(status.isListening))
 
   const status = await window.hermes.getStatus()
-  store.setConnection(status.isListening && status.clients > 0)
+  store.setConnection(status.isListening)
 }

@@ -44,6 +44,7 @@ export const useAvatarStore = defineStore('avatar', {
       this.isConnected = isConnected
     },
     handleEvent(event: HermesOverlayEvent) {
+      console.log('[avatar] handleEvent:', JSON.stringify(event))
       switch (event.type) {
         case 'assistant_message_started':
           this.currentMessage = ''
