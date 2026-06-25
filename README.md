@@ -62,6 +62,54 @@ If the model file is missing or fails to load, the avatar stage remains empty an
 
 Chitose is a Cubism 3 sample. The current Cubism 4 renderer is used for both bundled models.
 
+## Hermes Plugin Requirement
+
+For the avatar overlay to react to Hermes responses automatically, you need the `hermes-overlay-bridge` plugin installed and enabled in your Hermes Agent.
+
+### Install the plugin
+
+The plugin lives at `~/.hermes/plugins/hermes-overlay-bridge/` and was built for this avatar:
+
+**`plugin.yaml`**
+```yaml
+name: hermes-overlay-bridge
+hooks:
+  - pre_llm_call
+  - post_llm_call
+```
+
+**What it does:**
+- `pre_llm_call` — sends `assistant_message_started` → avatar shows thinking animation
+- `post_llm_call` — detects emotion from response text (keyword matching) and sends `assistant_message_completed` with the detected emotion
+
+The plugin uses a **persistent WebSocket connection** to `ws://localhost:9120` (not connect-send-close per event), so the overlay's `isConnected` state stays accurate.
+
+### Enable the plugin
+
+```bash
+hermes plugins list          # verify it's registered
+hermes plugins enable hermes-overlay-bridge
+```
+
+Then restart Hermes for the plugin to take effect:
+
+```bash
+# exit current session with /exit, then:
+hermes
+```
+
+### How it works
+
+```text
+Hermes Agent
+  ↓ pre_llm_call / post_llm_call hooks
+hermes-overlay-bridge plugin
+  ↓ WebSocket ws://localhost:9120
+fern-Hermes-avatar overlay
+  ↓
+Live2D avatar + manga speech bubbles
+```
+
 ## Hermes Event Contract
 
 Hermes connects to `ws://localhost:9120` and sends JSON messages:
