@@ -29,5 +29,15 @@ contextBridge.exposeInMainWorld('hermes', {
   },
   getStatus(): Promise<HermesStatus> {
     return ipcRenderer.invoke('hermes-get-status')
+  },
+  /** Request the main process to generate TTS audio for text and play it. */
+  speak(text: string): Promise<{ ok: boolean; path?: string; error?: string }> {
+    return ipcRenderer.invoke('hermes-speak', text)
+  },
+  /** Notification from main process to play a local audio file. */
+  onAudioPlay(callback: (payload: { url: string; path: string }) => void) {
+    const listener = (_: Electron.IpcRendererEvent, payload: { url: string; path: string }): void => callback(payload)
+    ipcRenderer.on('hermes-audio-play', listener)
+    return () => ipcRenderer.removeListener('hermes-audio-play', listener)
   }
 })

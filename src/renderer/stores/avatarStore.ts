@@ -17,6 +17,7 @@ interface AvatarState {
   phoneme?: string
   isConnected: boolean
   completedAt: number
+  audioUrl: string | null
 }
 
 export const useAvatarStore = defineStore('avatar', {
@@ -30,7 +31,8 @@ export const useAvatarStore = defineStore('avatar', {
     volume: 0,
     phoneme: undefined,
     isConnected: false,
-    completedAt: 0
+    completedAt: 0,
+    audioUrl: null
   }),
   getters: {
     currentAvatar: (state) => getAvatarDefinition(state.currentAvatarId)
@@ -52,6 +54,7 @@ export const useAvatarStore = defineStore('avatar', {
           this.isThinking = true
           this.isSpeaking = false
           this.volume = 0
+          this.audioUrl = null
           break
         case 'assistant_message_delta':
           this.currentMessage += event.text
@@ -63,6 +66,7 @@ export const useAvatarStore = defineStore('avatar', {
           this.isThinking = false
           this.isSpeaking = Boolean(event.audioUrl) || this.mode === 'voice'
           this.completedAt = Date.now()
+          this.audioUrl = event.audioUrl ?? null
           break
         case 'assistant_speaking':
           this.isThinking = false
@@ -76,6 +80,7 @@ export const useAvatarStore = defineStore('avatar', {
           this.volume = 0
           this.phoneme = undefined
           this.emotion = 'neutral'
+          this.audioUrl = null
           break
       }
     }

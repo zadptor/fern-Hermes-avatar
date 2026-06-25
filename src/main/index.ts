@@ -1,7 +1,8 @@
-import { app, BrowserWindow, ipcMain, screen } from 'electron'
-import { appendFileSync, mkdirSync } from 'node:fs'
+import { app, BrowserWindow, ipcMain, protocol, screen } from 'electron'
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { execFile } from 'node:child_process'
 import { createHermesWebSocketServer, type HermesWebSocketServer } from './websocket-server.js'
 
 // WSL / headless: allow SwiftShader software WebGL so PixiJS/Live2D can render.
@@ -95,8 +96,131 @@ function createWindow(): void {
   }
 }
 
+// ── Register custom protocol for audio file serving ───────────────────
+
+const audioTmpDir = join(app.getPath('temp'), 'fern-avatar-tts')
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'hermes-audio',
+    privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true }
+  }
+])
+
+// ── TTS: Generate speech using edge-tts CLI ────────────────────────────
+
+const edgeTtsBin = '/home/farihim/.local/bin/edge-tts'
+const ffmpegBin = '/usr/bin/ffmpeg'
+const winDirMnt = '/mnt/c/Users/USER/AppData/Local/Temp/fern-avatar-tts'
+
+function generateSpeak(text: string): Promise<{ wslPath: string; winMntWav: string; winWav: string }> {
+  return new Promise((resolve, reject) => {
+    mkdirSync(audioTmpDir, { recursive: true })
+    mkdirSync(winDirMnt, { recursive: true })
+    const wslPath = join(audioTmpDir, `speak_${Date.now()}.mp3`)
+    const wavPath = join(audioTmpDir, `speak_${Date.now()}.wav`)
+
+    logRuntime(`[tts] generating speech: "${text.slice(0, 60)}..."`)
+
+    execFile(
+      edgeTtsBin,
+      ['--voice', 'en-US-AnaNeural', '--text', text, '--write-media', wslPath],
+      { timeout: 30_000 },
+      (err) => {
+        if (err) {
+          logRuntime(`[tts] edge-tts failed: ${err}`)
+          reject(err)
+          return
+        }
+        logRuntime(`[tts] mp3 written: ${wslPath}`)
+
+        // Convert MP3 → WAV with ffmpeg
+        execFile(
+          ffmpegBin,
+          ['-y', '-i', wslPath, '-acodec', 'pcm_s16le', '-ar', '22050', wavPath],
+          { timeout: 10_000 },
+          (ffErr) => {
+            if (ffErr) {
+              logRuntime(`[tts] ffmpeg conversion failed: ${ffErr}`)
+              reject(ffErr)
+              return
+            }
+            logRuntime(`[tts] wav written: ${wavPath}`)
+
+            // Copy WAV to Windows temp
+            const winMntWav = join(winDirMnt, `speak_${Date.now()}.wav`)
+            try {
+              const data = readFileSync(wavPath)
+              writeFileSync(winMntWav, data)
+            } catch (copyErr) {
+              logRuntime(`[tts] copy to Windows failed: ${copyErr}`)
+              reject(copyErr)
+              return
+            }
+
+            // Also get Windows path via wslpath
+            execFile('wslpath', ['-w', winMntWav], { timeout: 5_000 }, (wpErr, winW) => {
+              if (wpErr) {
+                logRuntime(`[play] wslpath failed: ${wpErr}`)
+                reject(wpErr)
+                return
+              }
+              const winWav = winW.trim()
+              logRuntime(`[tts] Windows WAV: ${winWav}`)
+              resolve({ wslPath, winMntWav, winWav })
+            })
+          }
+        )
+      }
+    )
+  })
+}
+
+// ── Play audio through Windows speakers via PowerShell SoundPlayer ─────
+
+function playOnWindows(winWav: string): void {
+  logRuntime(`[play] playing WAV: ${winWav}`)
+  // SoundPlayer plays WAV natively — completely headless, synchronous, no window
+  execFile('powershell.exe', [
+    '-NoProfile', '-WindowStyle', 'Hidden', '-Command',
+    `(New-Object Media.SoundPlayer '${winWav}').PlaySync()`
+  ], { timeout: 60_000 }, (psErr) => {
+    if (psErr) logRuntime(`[play] playback error: ${psErr}`)
+    else logRuntime(`[play] playback complete`)
+  })
+}
+
+// ── IPC handlers ───────────────────────────────────────────────────────
+
 app.whenReady().then(() => {
+  protocol.handle('hermes-audio', (request) => {
+    const url = new URL(request.url)
+    const filePath = decodeURIComponent(url.pathname)
+    logRuntime(`[protocol] serving audio: ${filePath}`)
+    const data = readFileSync(filePath)
+    return new Response(data, {
+      headers: { 'Content-Type': 'audio/mpeg' }
+    })
+  })
+
   ipcMain.handle('hermes-get-status', () => hermesServer?.getStatus() ?? { isListening: false, clients: 0 })
+
+  ipcMain.handle('hermes-speak', async (_event, text: string) => {
+    logRuntime(`[speak] requested: "${text.slice(0, 80)}..."`)
+    try {
+      const { wslPath, winWav } = await generateSpeak(text)
+      playOnWindows(winWav)
+      const protocolUrl = `hermes-audio://localhost${wslPath}`
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('hermes-audio-play', { url: protocolUrl, path: wslPath })
+      }
+      return { ok: true, path: wslPath, url: protocolUrl }
+    } catch (err) {
+      logRuntime(`[speak] error: ${err}`)
+      return { ok: false, error: String(err) }
+    }
+  })
+
   createWindow()
 
   app.on('activate', () => {

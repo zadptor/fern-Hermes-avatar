@@ -20,6 +20,8 @@ declare global {
       onEvent: (callback: (event: HermesOverlayEvent) => void) => () => void
       onStatus: (callback: (status: HermesStatus) => void) => () => void
       getStatus: () => Promise<HermesStatus>
+      speak: (text: string) => Promise<{ ok: boolean; path?: string; url?: string; error?: string }>
+      onAudioPlay: (callback: (payload: { url: string; path: string }) => void) => () => void
     }
   }
 }
