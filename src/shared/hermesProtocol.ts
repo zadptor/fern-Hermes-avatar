@@ -1,5 +1,5 @@
 export type HermesEmotion = 'neutral' | 'happy' | 'thinking' | 'annoyed' | 'sad'
-export type HermesAvatarId = 'hiyori' | 'chitose'
+export type HermesAvatarId = 'hiyori' | 'chitose' | 'haru' | 'mao' | 'mark' | 'natori' | 'ren' | 'rice' | 'wanko'
 
 export type HermesOverlayEvent =
   | { type: 'assistant_message_started'; mode: 'text' | 'voice' }

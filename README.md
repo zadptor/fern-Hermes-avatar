@@ -11,7 +11,7 @@ Hermes Agent -> WebSocket ws://localhost:9120 -> fern-Hermes-avatar overlay
 - Transparent, frameless, always-on-top Electron panel window.
 - Local WebSocket server on port `9120` by default for Hermes overlay events.
 - Vue 3 renderer with Pinia state.
-- PixiJS v7 modular renderer wired for Cubism 4 Live2D models.
+- PixiJS v7 modular renderer wired for Cubism 4/5 Live2D models.
 - Runtime avatar animation for idle gaze, blinking, breathing, expression changes, and speech mouth movement.
 - Speech bubble, voice/speaking visualizer, expression mapping, and lip-sync smoothing.
 
@@ -93,15 +93,22 @@ The app can select between bundled Live2D sample models:
 ```text
 src/assets/live2d/models/hiyori_free/runtime/hiyori_free_t08.model3.json
 src/assets/live2d/models/chitose/runtime/chitose.model3.json
+src/assets/live2d/models/Haru/Haru.model3.json
+src/assets/live2d/models/Mao/Mao.model3.json
+src/assets/live2d/models/Mark/Mark.model3.json
+src/assets/live2d/models/Natori/Natori.model3.json
+src/assets/live2d/models/Ren/Ren.model3.json
+src/assets/live2d/models/Rice/Rice.model3.json
+src/assets/live2d/models/Wanko/Wanko.model3.json
 ```
 
 Each model's referenced textures, `.moc3`, physics, expressions, and motion files must stay in the paths expected by the `.model3.json` file.
 
-Cubism rendering also requires `src/assets/vendor/live2dcubismcore.min.js`, which is loaded before the renderer entrypoint. The bundled sample models include their original `ReadMe.txt`; review those files and the Live2D sample data license before redistributing.
+Cubism rendering also requires `src/assets/vendor/live2dcubismcore.min.js`, which is loaded before the renderer entrypoint. The bundled core exposes Cubism 5 moc support, and the additional sample models come from the Cubism Web Samples `develop` branch, which is documented as compatible with Cubism 5.3. The bundled sample models include their original readme/license files where provided; review those files and the Live2D sample data license before redistributing.
 
 If the model file is missing or fails to load, the avatar stage remains empty and the renderer logs the load error.
 
-Chitose is a Cubism 3 sample. The current Cubism 4 renderer is used for both bundled models.
+Chitose is a Cubism 3 sample. The current Pixi Live2D renderer uses its Cubism 4 entrypoint with the bundled Cubism Core for Cubism 3/4/5 `.model3.json` models.
 
 ## Hermes Plugin Requirement
 

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { HermesEmotion, HermesOverlayEvent } from '../bridge/messageTypes'
-import { defaultAvatarId, getAvatarDefinition } from '../live2d/avatarCatalog'
+import { avatarCatalog, defaultAvatarId, getAvatarDefinition } from '../live2d/avatarCatalog'
 import type { AvatarId } from '../live2d/avatarCatalog'
 
 type HermesMode = 'text' | 'voice'
@@ -89,10 +89,14 @@ export const useAvatarStore = defineStore('avatar', {
 
 function readStoredAvatarId(): AvatarId {
   const stored = window.localStorage.getItem(AVATAR_STORAGE_KEY)
-  if (stored === 'hiyori' || stored === 'chitose') return stored
+  if (isAvatarId(stored)) return stored
   if (stored === 'ren_foster') {
     window.localStorage.setItem(AVATAR_STORAGE_KEY, 'chitose')
     return 'chitose'
   }
   return defaultAvatarId
+}
+
+function isAvatarId(value: string | null): value is AvatarId {
+  return avatarCatalog.some((avatar) => avatar.id === value)
 }
