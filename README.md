@@ -18,7 +18,8 @@ Hermes Agent -> WebSocket ws://localhost:9120 -> fern-Hermes-avatar overlay
 ## Install
 
 ```bash
-npm install
+npm install      # Electron + Vue dependencies
+./install.sh     # Install hermes-overlay-bridge plugin into Hermes
 ```
 
 ## Development
@@ -127,50 +128,36 @@ Chitose is a Cubism 3 sample. The current Pixi Live2D renderer uses its Cubism 4
 
 ## Hermes Plugin Requirement
 
-For the avatar overlay to react to Hermes responses automatically, you need the `hermes-overlay-bridge` plugin installed and enabled in your Hermes Agent.
+The avatar overlay needs the `hermes-overlay-bridge` plugin inside your Hermes Agent.
+Run `./install.sh` from the repo root — it detects your platform and
+symlinks (Linux/macOS/WSL) or copies (Windows) the plugin into
+`~/.hermes/plugins/hermes-overlay-bridge/`.
 
-### Install the plugin
+The plugin source lives in `hermes-plugin/` inside this repo.
 
-The plugin lives at `~/.hermes/plugins/hermes-overlay-bridge/` and was built for this avatar:
+### What it does
 
-**`plugin.yaml`**
-```yaml
-name: hermes-overlay-bridge
-hooks:
-  - pre_llm_call
-  - post_llm_call
-```
+- `pre_llm_call` — sends `assistant_message_started` → overlay shows thinking animation
+- `post_llm_call` — detects emotion from response text and sends `assistant_message_completed`
 
-**What it does:**
-- `pre_llm_call` — sends `assistant_message_started` → avatar shows thinking animation
-- `post_llm_call` — detects emotion from response text (keyword matching) and sends `assistant_message_completed` with the detected emotion
+The plugin maintains a persistent WebSocket connection to `ws://localhost:9120`
+so the overlay never shows "Waiting…" between events.
 
-The plugin uses a **persistent WebSocket connection** to `ws://localhost:9120` by default (not connect-send-close per event), so the overlay's `isConnected` state stays accurate. If you set `HERMES_PORT`, point the plugin at the same port.
-
-### Enable the plugin
+### Manual install (if install.sh doesn't work)
 
 ```bash
-hermes plugins list          # verify it's registered
+# Symlink (Linux / macOS / WSL)
+ln -s "$(pwd)/hermes-plugin" ~/.hermes/plugins/hermes-overlay-bridge
+
+# Copy (Windows native)
+cp -r hermes-plugin "$USERPROFILE/.hermes/plugins/hermes-overlay-bridge"
+```
+
+Then enable and restart:
+
+```bash
 hermes plugins enable hermes-overlay-bridge
-```
-
-Then restart Hermes for the plugin to take effect:
-
-```bash
-# exit current session with /exit, then:
-hermes
-```
-
-### How it works
-
-```text
-Hermes Agent
-  ↓ pre_llm_call / post_llm_call hooks
-hermes-overlay-bridge plugin
-  ↓ WebSocket ws://localhost:9120
-fern-Hermes-avatar overlay
-  ↓
-Live2D avatar + manga speech bubbles
+# exit current session with /exit, then start hermes
 ```
 
 ## Hermes Event Contract

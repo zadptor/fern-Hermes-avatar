@@ -1,0 +1,7 @@
+name: hermes-overlay-bridge
+version: "0.1.0"
+description: Forward Hermes response lifecycle events to the fern-Hermes-avatar overlay via WebSocket.
+author: Farihim
+hooks:
+  - pre_llm_call
+  - post_llm_call

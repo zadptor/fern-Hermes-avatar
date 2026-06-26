@@ -9,3 +9,4 @@ release/
 *.log
 .DS_Store
 *.tsbuildinfo
+__pycache__/
