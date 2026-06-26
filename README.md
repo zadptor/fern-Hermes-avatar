@@ -43,7 +43,14 @@ Environment-specific settings are read from environment variables in the Electro
 | `HERMES_DISABLE_HARDWARE_ACCELERATION` | `true` | Disables hardware acceleration for WSL/headless-friendly rendering. |
 | `HERMES_ELECTRON_SWITCHES` | `disable-gpu,ignore-gpu-blocklist,enable-unsafe-swiftshader` | Comma-separated Electron command-line switches. |
 | `HERMES_TTS_TEMP_DIR_NAME` | `fern-avatar-tts` | Subdirectory name under the OS temp directory for generated audio. |
+| `HERMES_TTS_PROVIDER` | `edge` | TTS backend: `edge` or `elevenlabs`. |
 | `HERMES_EDGE_TTS_COMMANDS` | `[["edge-tts"],["py","-m","edge_tts"],["python","-m","edge_tts"]]` | Candidate `edge-tts` commands. Accepts JSON or semicolon-separated commands. |
+| `HERMES_ELEVENLABS_API_KEY` | unset | ElevenLabs API key. Required when `HERMES_TTS_PROVIDER=elevenlabs`. |
+| `HERMES_ELEVENLABS_VOICE_ID` | unset | ElevenLabs voice ID. Required when `HERMES_TTS_PROVIDER=elevenlabs`. |
+| `HERMES_ELEVENLABS_MODEL_ID` | `eleven_multilingual_v2` | ElevenLabs TTS model. |
+| `HERMES_ELEVENLABS_OUTPUT_FORMAT` | `mp3_44100_128` | ElevenLabs audio output format. |
+| `HERMES_ELEVENLABS_BASE_URL` | `https://api.elevenlabs.io` | ElevenLabs API base URL. |
+| `HERMES_ELEVENLABS_TIMEOUT_MS` | `30000` | Timeout for ElevenLabs TTS requests. |
 | `HERMES_FFMPEG_BIN` | `ffmpeg` | `ffmpeg` executable path or command name. |
 | `HERMES_WSLPATH_BIN` | `wslpath` | `wslpath` executable path or command name. |
 | `HERMES_POWERSHELL_BIN` | `powershell.exe` | PowerShell executable used for Windows audio playback. |
@@ -54,6 +61,8 @@ Environment-specific settings are read from environment variables in the Electro
 | `HERMES_FFMPEG_TIMEOUT_MS` | `5000` | Timeout for MP3 to WAV conversion. |
 | `HERMES_WSLPATH_TIMEOUT_MS` | `5000` | Timeout for converting WSL paths to Windows paths. |
 | `HERMES_TTS_PLAYBACK_TIMEOUT_MS` | `60000` | Timeout for PowerShell audio playback. |
+| `HERMES_TTS_CLEANUP_TTL_MS` | `86400000` | Deletes generated TTS audio older than this age. |
+| `HERMES_TTS_CLEANUP_MAX_BYTES` | `104857600` | Maximum generated TTS temp directory size before oldest files are deleted. |
 | `HERMES_TTS_PLAYBACK_MODE` | `renderer` | Audio output path: `renderer`, `windows`, or `both`. Use `renderer` for one clean voice from the app. |
 | `HERMES_TTS_WINDOWS_PLAYBACK_ENABLED` | unset | Legacy compatibility flag. If set, `true` maps to `windows` and `false` maps to `renderer` unless `HERMES_TTS_PLAYBACK_MODE` is set. |
 | `HERMES_TTS_WINDOWS_TEMP_MOUNT` | unset | Optional Windows-mounted temp directory. If set, generated WAV files are copied there before playback. |
@@ -68,6 +77,12 @@ Per-avatar voice example:
 
 ```bash
 HERMES_TTS_VOICE_BY_AVATAR='{"hiyori":"en-US-AriaNeural","chitose":"en-US-GuyNeural"}' npm run dev
+```
+
+ElevenLabs example:
+
+```bash
+HERMES_TTS_PROVIDER=elevenlabs HERMES_ELEVENLABS_API_KEY=... HERMES_ELEVENLABS_VOICE_ID=... npm run dev
 ```
 
 ## Build

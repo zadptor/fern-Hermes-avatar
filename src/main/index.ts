@@ -102,12 +102,16 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 app.whenReady().then(() => {
+  ttsService.cleanupTempFiles()
   ttsService.registerProtocol()
 
   ipcMain.handle('hermes-get-status', () => {
     return hermesServer?.getStatus() ?? { isListening: false, clients: 0, port: runtimeConfig.hermes.port }
   })
   ipcMain.handle('hermes-speak', async (_event, text: string, avatarId?: HermesAvatarId) => ttsService.speak(text, avatarId))
+  ipcMain.handle('hermes-cleanup-audio', (_event, filePath: string) => {
+    ttsService.cleanupAudio(filePath)
+  })
 
   createWindow()
 

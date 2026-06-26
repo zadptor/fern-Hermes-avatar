@@ -24,5 +24,8 @@ contextBridge.exposeInMainWorld('hermes', {
     const listener = (_: Electron.IpcRendererEvent, payload: HermesAudioPayload): void => callback(payload)
     ipcRenderer.on('hermes-audio-play', listener)
     return () => ipcRenderer.removeListener('hermes-audio-play', listener)
+  },
+  cleanupAudio(path: string): Promise<void> {
+    return ipcRenderer.invoke('hermes-cleanup-audio', path)
   }
 })

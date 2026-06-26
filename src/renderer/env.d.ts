@@ -10,6 +10,7 @@ declare global {
       getStatus: () => Promise<HermesStatus>
       speak: (text: string, avatarId?: HermesAvatarId) => Promise<HermesSpeakResult>
       onAudioPlay: (callback: (payload: HermesAudioPayload) => void) => () => void
+      cleanupAudio: (path: string) => Promise<void>
     }
   }
 }

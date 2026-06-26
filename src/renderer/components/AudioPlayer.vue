@@ -10,15 +10,29 @@ const { currentAvatarId } = storeToRefs(store)
 const audioRef = ref<HTMLAudioElement | null>(null)
 let cleanupPlay: (() => void) | null = null
 let cleanupCompleted: (() => void) | null = null
+let currentAudioPath: string | null = null
 
 // Play an audio file through the hidden <audio> element using the protocol URL
 function playAudio(payload: HermesAudioPayload): void {
   if (!audioRef.value) return
+  cleanupCurrentAudio()
+  currentAudioPath = payload.path
   console.log('[audio] playing:', payload.url)
   audioRef.value.src = payload.url
   audioRef.value.currentTime = 0
   audioRef.value.play().catch((err) => {
     console.warn('[audio] play failed:', err)
+    cleanupCurrentAudio()
+  })
+}
+
+function cleanupCurrentAudio(): void {
+  if (!currentAudioPath) return
+
+  const path = currentAudioPath
+  currentAudioPath = null
+  window.hermes?.cleanupAudio(path).catch((err: unknown) => {
+    console.warn('[audio] cleanup failed:', err)
   })
 }
 
@@ -56,10 +70,11 @@ onMounted(() => {
 onBeforeUnmount(() => {
   cleanupPlay?.()
   cleanupCompleted?.()
+  cleanupCurrentAudio()
 })
 </script>
 
 <template>
   <!-- Hidden audio element for TTS playback -->
-  <audio ref="audioRef" preload="none" hidden />
+  <audio ref="audioRef" preload="none" hidden @ended="cleanupCurrentAudio" @error="cleanupCurrentAudio" />
 </template>

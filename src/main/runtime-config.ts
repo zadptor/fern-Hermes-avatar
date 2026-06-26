@@ -13,8 +13,15 @@ export interface RuntimeConfig {
     commandLineSwitches: string[]
   }
   tts: {
+    provider: 'edge' | 'elevenlabs'
     audioTempDirName: string
     edgeTtsCommands: string[][]
+    elevenLabsApiKey?: string
+    elevenLabsVoiceId?: string
+    elevenLabsModelId: string
+    elevenLabsOutputFormat: string
+    elevenLabsBaseUrl: string
+    elevenLabsTimeoutMs: number
     ffmpegBin: string
     wslpathBin: string
     powershellBin: string
@@ -24,6 +31,8 @@ export interface RuntimeConfig {
     ffmpegTimeoutMs: number
     wslpathTimeoutMs: number
     playbackTimeoutMs: number
+    cleanupTtlMs: number
+    cleanupMaxBytes: number
     playbackMode: 'renderer' | 'windows' | 'both'
     voiceByAvatar: Record<string, string>
     windowsTempMount?: string
@@ -49,8 +58,15 @@ export const runtimeConfig: RuntimeConfig = {
     ])
   },
   tts: {
+    provider: readTtsProviderEnv(),
     audioTempDirName: readStringEnv('HERMES_TTS_TEMP_DIR_NAME', 'fern-avatar-tts'),
     edgeTtsCommands: readCommandListEnv('HERMES_EDGE_TTS_COMMANDS', [['edge-tts'], ['py', '-m', 'edge_tts'], ['python', '-m', 'edge_tts']]),
+    elevenLabsApiKey: readOptionalStringEnv('HERMES_ELEVENLABS_API_KEY'),
+    elevenLabsVoiceId: readOptionalStringEnv('HERMES_ELEVENLABS_VOICE_ID'),
+    elevenLabsModelId: readStringEnv('HERMES_ELEVENLABS_MODEL_ID', 'eleven_multilingual_v2'),
+    elevenLabsOutputFormat: readStringEnv('HERMES_ELEVENLABS_OUTPUT_FORMAT', 'mp3_44100_128'),
+    elevenLabsBaseUrl: readStringEnv('HERMES_ELEVENLABS_BASE_URL', 'https://api.elevenlabs.io'),
+    elevenLabsTimeoutMs: readIntegerEnv('HERMES_ELEVENLABS_TIMEOUT_MS', 30_000),
     ffmpegBin: readStringEnv('HERMES_FFMPEG_BIN', 'ffmpeg'),
     wslpathBin: readStringEnv('HERMES_WSLPATH_BIN', 'wslpath'),
     powershellBin: readStringEnv('HERMES_POWERSHELL_BIN', 'powershell.exe'),
@@ -60,6 +76,8 @@ export const runtimeConfig: RuntimeConfig = {
     ffmpegTimeoutMs: readIntegerEnv('HERMES_FFMPEG_TIMEOUT_MS', 5_000),
     wslpathTimeoutMs: readIntegerEnv('HERMES_WSLPATH_TIMEOUT_MS', 5_000),
     playbackTimeoutMs: readIntegerEnv('HERMES_TTS_PLAYBACK_TIMEOUT_MS', 60_000),
+    cleanupTtlMs: readIntegerEnv('HERMES_TTS_CLEANUP_TTL_MS', 86_400_000),
+    cleanupMaxBytes: readIntegerEnv('HERMES_TTS_CLEANUP_MAX_BYTES', 104_857_600),
     playbackMode: readPlaybackModeEnv(),
     voiceByAvatar: readRecordEnv('HERMES_TTS_VOICE_BY_AVATAR', {
       hiyori: 'en-US-AriaNeural',
@@ -67,6 +85,11 @@ export const runtimeConfig: RuntimeConfig = {
     }),
     windowsTempMount: readOptionalStringEnv('HERMES_TTS_WINDOWS_TEMP_MOUNT')
   }
+}
+
+function readTtsProviderEnv(): RuntimeConfig['tts']['provider'] {
+  const value = process.env.HERMES_TTS_PROVIDER?.trim().toLowerCase()
+  return value === 'elevenlabs' ? 'elevenlabs' : 'edge'
 }
 
 function readStringEnv(name: string, fallback: string): string {
