@@ -1,51 +1,16 @@
 import { WebSocketServer } from 'ws'
 import type { WebSocket } from 'ws'
-
-type HermesEmotion = 'neutral' | 'happy' | 'thinking' | 'annoyed' | 'sad'
-
-export type HermesOverlayEvent =
-  | { type: 'assistant_message_started'; mode: 'text' | 'voice' }
-  | { type: 'assistant_message_delta'; text: string }
-  | { type: 'assistant_message_completed'; text: string; audioUrl?: string; emotion?: HermesEmotion }
-  | { type: 'assistant_speaking'; volume: number; phoneme?: string }
-  | { type: 'assistant_idle' }
-
-export interface HermesServerStatus {
-  isListening: boolean
-  clients: number
-  port: number
-  lastError?: string
-}
+import { isHermesOverlayEvent, type HermesOverlayEvent, type HermesStatus } from '../shared/hermesProtocol.js'
 
 export interface HermesWebSocketServer {
-  getStatus: () => HermesServerStatus
+  getStatus: () => HermesStatus
   close: () => void
 }
 
 interface HermesWebSocketServerOptions {
   port: number
   onEvent: (event: HermesOverlayEvent) => void
-  onStatusChange: (status: HermesServerStatus) => void
-}
-
-function isHermesOverlayEvent(value: unknown): value is HermesOverlayEvent {
-  if (!value || typeof value !== 'object' || !('type' in value)) return false
-
-  const event = value as Record<string, unknown>
-  switch (event.type) {
-    case 'assistant_message_started':
-      return event.mode === 'text' || event.mode === 'voice'
-    case 'assistant_message_delta':
-      return typeof event.text === 'string'
-    case 'assistant_message_completed':
-      return typeof event.text === 'string'
-    case 'assistant_speaking':
-      return typeof event.volume === 'number'
-    case 'assistant_idle':
-      return true
-    default:
-      return false
-  }
+  onStatusChange: (status: HermesStatus) => void
 }
 
 export function createHermesWebSocketServer(options: HermesWebSocketServerOptions): HermesWebSocketServer {
@@ -53,7 +18,7 @@ export function createHermesWebSocketServer(options: HermesWebSocketServerOption
   let isListening = false
   let lastError: string | undefined
 
-  const status = (): HermesServerStatus => ({
+  const status = (): HermesStatus => ({
     isListening,
     clients: clients.size,
     port: options.port,

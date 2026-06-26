@@ -1,15 +1,18 @@
 import { app, BrowserWindow, ipcMain, protocol, screen } from 'electron'
-import { appendFileSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { execFile } from 'node:child_process'
+import type { HermesAvatarId } from '../shared/hermesProtocol.js'
+import { runtimeConfig } from './runtime-config.js'
+import { createTtsService, logRuntime } from './tts-service.js'
 import { createHermesWebSocketServer, type HermesWebSocketServer } from './websocket-server.js'
 
-// WSL / headless: allow SwiftShader software WebGL so PixiJS/Live2D can render.
-app.commandLine.appendSwitch('disable-gpu')
-app.commandLine.appendSwitch('ignore-gpu-blocklist')
-app.commandLine.appendSwitch('enable-unsafe-swiftshader')
-app.disableHardwareAcceleration()
+for (const commandLineSwitch of runtimeConfig.rendering.commandLineSwitches) {
+  app.commandLine.appendSwitch(commandLineSwitch)
+}
+
+if (runtimeConfig.rendering.disableHardwareAcceleration) {
+  app.disableHardwareAcceleration()
+}
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
@@ -17,24 +20,19 @@ let mainWindow: BrowserWindow | null = null
 let hermesServer: HermesWebSocketServer | null = null
 let isQuitting = false
 
-function logRuntime(message: string): void {
-  const line = `${new Date().toISOString()} ${message}\n`
-  try {
-    const logDir = join(app.getPath('userData'), 'logs')
-    mkdirSync(logDir, { recursive: true })
-    appendFileSync(join(logDir, 'runtime.log'), line)
-  } catch {
-    // Best-effort diagnostics only.
+const ttsService = createTtsService({
+  log: logRuntime,
+  onAudioReady: (payload) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('hermes-audio-play', payload)
+    }
   }
-  console.log(message)
-}
+})
 
 function createWindow(): void {
   const display = screen.getPrimaryDisplay()
-  const width = 560
-  const height = 820
-  const margin = 24
   const { x, y, width: workWidth, height: workHeight } = display.workArea
+  const { width, height, margin } = runtimeConfig.window
 
   mainWindow = new BrowserWindow({
     width,
@@ -58,7 +56,7 @@ function createWindow(): void {
     }
   })
 
-  mainWindow.setAlwaysOnTop(true, 'screen-saver')
+  mainWindow.setAlwaysOnTop(true, runtimeConfig.window.alwaysOnTopLevel)
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
 
   mainWindow.on('close', (event) => {
@@ -81,7 +79,7 @@ function createWindow(): void {
   })
 
   hermesServer = createHermesWebSocketServer({
-    port: 9120,
+    port: runtimeConfig.hermes.port,
     onEvent: (event) => {
       logRuntime(`[hermes-event] received: ${JSON.stringify(event)}`)
       mainWindow?.webContents.send('hermes-event', event)
@@ -96,10 +94,6 @@ function createWindow(): void {
   }
 }
 
-// ── Register custom protocol for audio file serving ───────────────────
-
-const audioTmpDir = join(app.getPath('temp'), 'fern-avatar-tts')
-
 protocol.registerSchemesAsPrivileged([
   {
     scheme: 'hermes-audio',
@@ -107,128 +101,13 @@ protocol.registerSchemesAsPrivileged([
   }
 ])
 
-// ── TTS: Generate speech using edge-tts CLI ────────────────────────────
-
-const edgeTtsBin = '/home/farihim/.local/bin/edge-tts'
-const ffmpegBin = '/usr/bin/ffmpeg'
-const winDirMnt = '/mnt/c/Users/USER/AppData/Local/Temp/fern-avatar-tts'
-
-function generateSpeak(text: string): Promise<{ wslPath: string; winMntWav: string; winWav: string }> {
-  return new Promise((resolve, reject) => {
-    mkdirSync(audioTmpDir, { recursive: true })
-    mkdirSync(winDirMnt, { recursive: true })
-    const wslPath = join(audioTmpDir, `speak_${Date.now()}.mp3`)
-    const wavPath = join(audioTmpDir, `speak_${Date.now()}.wav`)
-
-    logRuntime(`[tts] generating speech: "${text.slice(0, 60)}..."`)
-
-    execFile(
-      edgeTtsBin,
-      ['--voice', 'en-US-AnaNeural', '--text', text, '--write-media', wslPath],
-      { timeout: 30_000 },
-      (err) => {
-        if (err) {
-          logRuntime(`[tts] edge-tts failed: ${err}`)
-          reject(err)
-          return
-        }
-        logRuntime(`[tts] mp3 written: ${wslPath}`)
-
-        // Convert MP3 → WAV with ffmpeg (fast, mono, speech-optimized)
-        execFile(
-          ffmpegBin,
-          ['-y', '-i', wslPath, '-acodec', 'pcm_s16le', '-ar', '16000', '-ac', '1', wavPath],
-          { timeout: 5_000 },
-          (ffErr) => {
-            if (ffErr) {
-              logRuntime(`[tts] ffmpeg conversion failed: ${ffErr}`)
-              reject(ffErr)
-              return
-            }
-            logRuntime(`[tts] wav written: ${wavPath}`)
-
-            // Copy WAV to Windows temp
-            const winMntWav = join(winDirMnt, `speak_${Date.now()}.wav`)
-            try {
-              const data = readFileSync(wavPath)
-              writeFileSync(winMntWav, data)
-            } catch (copyErr) {
-              logRuntime(`[tts] copy to Windows failed: ${copyErr}`)
-              reject(copyErr)
-              return
-            }
-
-            // Also get Windows path via wslpath
-            execFile('wslpath', ['-w', winMntWav], { timeout: 5_000 }, (wpErr, winW) => {
-              if (wpErr) {
-                logRuntime(`[play] wslpath failed: ${wpErr}`)
-                reject(wpErr)
-                return
-              }
-              const winWav = winW.trim()
-              logRuntime(`[tts] Windows WAV: ${winWav}`)
-              resolve({ wslPath, winMntWav, winWav })
-            })
-          }
-        )
-      }
-    )
-  })
-}
-
-// ── Play audio through Windows speakers via PowerShell SoundPlayer ─────
-
-let playbackQueue: Promise<void> = Promise.resolve()
-
-function playOnWindows(winWav: string): void {
-  // Serialize: queue this playback after any previous one completes
-  playbackQueue = playbackQueue.then(() => {
-    return new Promise<void>((resolve) => {
-      logRuntime(`[play] playing WAV: ${winWav}`)
-      execFile('powershell.exe', [
-        '-NoProfile', '-WindowStyle', 'Hidden', '-Command',
-        `(New-Object Media.SoundPlayer '${winWav}').PlaySync()`
-      ], { timeout: 60_000 }, (psErr) => {
-        if (psErr) logRuntime(`[play] playback error: ${psErr}`)
-        else logRuntime(`[play] playback complete`)
-        resolve()
-      })
-    })
-  })
-}
-
-// ── IPC handlers ───────────────────────────────────────────────────────
-
 app.whenReady().then(() => {
-  protocol.handle('hermes-audio', (request) => {
-    const url = new URL(request.url)
-    const filePath = decodeURIComponent(url.pathname)
-    logRuntime(`[protocol] serving audio: ${filePath}`)
-    const data = readFileSync(filePath)
-    return new Response(data, {
-      headers: { 'Content-Type': 'audio/mpeg' }
-    })
-  })
+  ttsService.registerProtocol()
 
-  ipcMain.handle('hermes-get-status', () => hermesServer?.getStatus() ?? { isListening: false, clients: 0 })
-
-  ipcMain.handle('hermes-speak', async (_event, text: string) => {
-    // Cap text length for faster TTS generation
-    const speakText = text.length > 300 ? text.slice(0, 300) + '...' : text
-    logRuntime(`[speak] requested: "${speakText.slice(0, 80)}..."`)
-    try {
-      const { wslPath, winWav } = await generateSpeak(speakText)
-      playOnWindows(winWav)
-      const protocolUrl = `hermes-audio://localhost${wslPath}`
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('hermes-audio-play', { url: protocolUrl, path: wslPath })
-      }
-      return { ok: true, path: wslPath, url: protocolUrl }
-    } catch (err) {
-      logRuntime(`[speak] error: ${err}`)
-      return { ok: false, error: String(err) }
-    }
+  ipcMain.handle('hermes-get-status', () => {
+    return hermesServer?.getStatus() ?? { isListening: false, clients: 0, port: runtimeConfig.hermes.port }
   })
+  ipcMain.handle('hermes-speak', async (_event, text: string, avatarId?: HermesAvatarId) => ttsService.speak(text, avatarId))
 
   createWindow()
 

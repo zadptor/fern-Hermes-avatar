@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import type { HermesAudioPayload, HermesOverlayEvent } from '../../shared/hermesProtocol'
 import { useAvatarStore } from '../stores/avatarStore'
 
 const store = useAvatarStore()
+const { currentAvatarId } = storeToRefs(store)
 const audioRef = ref<HTMLAudioElement | null>(null)
 let cleanupPlay: (() => void) | null = null
 let cleanupCompleted: (() => void) | null = null
 
 // Play an audio file through the hidden <audio> element using the protocol URL
-function playAudio(payload: { url: string; path: string }) {
+function playAudio(payload: HermesAudioPayload): void {
   if (!audioRef.value) return
   console.log('[audio] playing:', payload.url)
   audioRef.value.src = payload.url
@@ -19,14 +22,18 @@ function playAudio(payload: { url: string; path: string }) {
 }
 
 // Watch for assistant_message_completed and generate TTS
-function handleEvent(event: any) {
+function handleEvent(event: HermesOverlayEvent): void {
   if (event.type === 'assistant_message_completed') {
-    const text = event.text || ''
+    const text = event.text
     if (text.length > 0 && text.length <= 5000 && window.hermes?.speak) {
-      // Fire-and-forget TTS generation — plays automatically via hermes-audio-play
-      window.hermes.speak(text).then((result) => {
-        console.log('[tts] generation result:', result)
-      }).catch((err: any) => {
+      window.hermes.speak(text, currentAvatarId.value).then((result) => {
+        if (result.ok) {
+          console.log(`[tts] generated with ${result.voice ?? 'configured voice'}: ${result.url ?? result.path ?? ''}`)
+          return
+        }
+
+        console.warn(`[tts] generation failed: ${result.error ?? 'Unknown error'}`)
+      }).catch((err: unknown) => {
         console.warn('[tts] generation failed:', err)
       })
     }

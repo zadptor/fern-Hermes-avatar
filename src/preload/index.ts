@@ -1,20 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-
-type HermesEmotion = 'neutral' | 'happy' | 'thinking' | 'annoyed' | 'sad'
-
-type HermesOverlayEvent =
-  | { type: 'assistant_message_started'; mode: 'text' | 'voice' }
-  | { type: 'assistant_message_delta'; text: string }
-  | { type: 'assistant_message_completed'; text: string; audioUrl?: string; emotion?: HermesEmotion }
-  | { type: 'assistant_speaking'; volume: number; phoneme?: string }
-  | { type: 'assistant_idle' }
-
-interface HermesStatus {
-  isListening: boolean
-  clients: number
-  port: number
-  lastError?: string
-}
+import type { HermesAudioPayload, HermesAvatarId, HermesOverlayEvent, HermesSpeakResult, HermesStatus } from '../shared/hermesProtocol.js'
 
 contextBridge.exposeInMainWorld('hermes', {
   onEvent(callback: (event: HermesOverlayEvent) => void) {
@@ -31,12 +16,12 @@ contextBridge.exposeInMainWorld('hermes', {
     return ipcRenderer.invoke('hermes-get-status')
   },
   /** Request the main process to generate TTS audio for text and play it. */
-  speak(text: string): Promise<{ ok: boolean; path?: string; error?: string }> {
-    return ipcRenderer.invoke('hermes-speak', text)
+  speak(text: string, avatarId?: HermesAvatarId): Promise<HermesSpeakResult> {
+    return ipcRenderer.invoke('hermes-speak', text, avatarId)
   },
   /** Notification from main process to play a local audio file. */
-  onAudioPlay(callback: (payload: { url: string; path: string }) => void) {
-    const listener = (_: Electron.IpcRendererEvent, payload: { url: string; path: string }): void => callback(payload)
+  onAudioPlay(callback: (payload: HermesAudioPayload) => void) {
+    const listener = (_: Electron.IpcRendererEvent, payload: HermesAudioPayload): void => callback(payload)
     ipcRenderer.on('hermes-audio-play', listener)
     return () => ipcRenderer.removeListener('hermes-audio-play', listener)
   }
