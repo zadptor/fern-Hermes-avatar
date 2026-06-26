@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import type { HermesEmotion, HermesOverlayEvent } from '../bridge/messageTypes'
+import { toAvatarConversationText } from '../../shared/conversationText'
 import { avatarCatalog, defaultAvatarId, getAvatarDefinition } from '../live2d/avatarCatalog'
 import type { AvatarId } from '../live2d/avatarCatalog'
 
@@ -61,7 +62,7 @@ export const useAvatarStore = defineStore('avatar', {
           this.isThinking = false
           break
         case 'assistant_message_completed':
-          this.currentMessage = event.text
+          this.currentMessage = toAvatarConversationText(event.text)
           this.emotion = event.emotion ?? 'neutral'
           this.isThinking = false
           this.isSpeaking = Boolean(event.audioUrl) || this.mode === 'voice'

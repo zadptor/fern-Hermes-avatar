@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import type { HermesAudioPayload, HermesOverlayEvent } from '../../shared/hermesProtocol'
+import { toAvatarConversationText } from '../../shared/conversationText'
 import { useAvatarStore } from '../stores/avatarStore'
 
 const store = useAvatarStore()
@@ -24,7 +25,7 @@ function playAudio(payload: HermesAudioPayload): void {
 // Watch for assistant_message_completed and generate TTS
 function handleEvent(event: HermesOverlayEvent): void {
   if (event.type === 'assistant_message_completed') {
-    const text = event.text
+    const text = toAvatarConversationText(event.text)
     if (text.length > 0 && text.length <= 5000 && window.hermes?.speak) {
       window.hermes.speak(text, currentAvatarId.value).then((result) => {
         if (result.ok) {
