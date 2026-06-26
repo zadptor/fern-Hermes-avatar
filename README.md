@@ -33,6 +33,7 @@ The overlay opens as a transparent panel positioned near the bottom-right of the
 ## Runtime Configuration
 
 Environment-specific settings are read from environment variables in the Electron main process. Defaults match the bundled desktop overlay behavior.
+The app also loads a repo-local `.env` file if present. `.env` is ignored by Git; use `.env.example` as the template.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
@@ -85,6 +86,8 @@ ElevenLabs example:
 ```bash
 HERMES_TTS_PROVIDER=elevenlabs HERMES_ELEVENLABS_API_KEY=... HERMES_ELEVENLABS_VOICE_ID=... npm run dev
 ```
+
+Or create `.env` from `.env.example` and fill in `HERMES_ELEVENLABS_API_KEY`.
 
 ## Build
 

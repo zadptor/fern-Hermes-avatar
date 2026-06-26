@@ -84,7 +84,7 @@ export function createTtsService(options: {
     try {
       cleanupTempFiles()
       cleanupInMemoryAudio()
-      if (shouldUseElevenLabs()) {
+      if (config.provider === 'elevenlabs') {
         const result = await speakWithElevenLabs(speakText, voice)
         return { ...result, voice }
       }
@@ -152,6 +152,9 @@ export function createTtsService(options: {
     const apiKey = config.elevenLabsApiKey
     if (!apiKey) {
       throw new Error('HERMES_ELEVENLABS_API_KEY is required when HERMES_TTS_PROVIDER=elevenlabs')
+    }
+    if (!voice) {
+      throw new Error('HERMES_ELEVENLABS_VOICE_ID is required when HERMES_TTS_PROVIDER=elevenlabs')
     }
 
     const endpoint = new URL(`/v1/text-to-speech/${encodeURIComponent(voice)}/stream`, config.elevenLabsBaseUrl)
@@ -373,14 +376,6 @@ export function createTtsService(options: {
   return { speak, cleanupAudio, cleanupTempFiles, registerProtocol }
 }
 
-function shouldUseElevenLabs(): boolean {
-  return Boolean(
-    runtimeConfig.tts.provider === 'elevenlabs' &&
-    runtimeConfig.tts.elevenLabsApiKey &&
-    runtimeConfig.tts.elevenLabsVoiceId
-  )
-}
-
 function parseMemoryAudioId(pathname: string): string | null {
   const match = /^\/memory\/([^/]+)$/.exec(pathname)
   return match ? match[1] : null
@@ -422,8 +417,8 @@ function isGeneratedAudioFile(filePath: string): boolean {
 }
 
 function resolveVoice(avatarId: HermesAvatarId | undefined): string {
-  if (runtimeConfig.tts.provider === 'elevenlabs' && runtimeConfig.tts.elevenLabsVoiceId) {
-    return runtimeConfig.tts.elevenLabsVoiceId
+  if (runtimeConfig.tts.provider === 'elevenlabs') {
+    return runtimeConfig.tts.elevenLabsVoiceId ?? ''
   }
 
   if (avatarId && runtimeConfig.tts.voiceByAvatar[avatarId]) {
