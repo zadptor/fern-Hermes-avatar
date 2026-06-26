@@ -120,72 +120,46 @@ onBeforeUnmount(() => {
       :class="[bubbleKind, emotion]"
       aria-live="polite"
     >
-      <!-- thinking bubble: manga-style cloud + bubble trail -->
+      <!-- thinking bubble: sketch-style cloud + bubble trail -->
       <template v-if="bubbleKind === 'thinking'">
-        <!-- Bubble trail: three progressively smaller circles floating up to the cloud -->
-        <svg class="thought-trail" viewBox="0 0 90 60" aria-hidden="true">
-          <circle cx="45" cy="50" r="10" class="trail-circle" />
-          <circle cx="45" cy="30" r="7" class="trail-circle" />
-          <circle cx="45" cy="14" r="4" class="trail-circle" />
+        <svg class="thought-trail" viewBox="0 0 72 78" aria-hidden="true">
+          <circle cx="16" cy="62" r="9" class="trail-circle" />
+          <circle cx="36" cy="39" r="13" class="trail-circle" />
         </svg>
 
-        <svg class="cloud-shape" viewBox="0 0 240 120" preserveAspectRatio="none" aria-hidden="true">
-          <!-- Main cloud path (solid fill + thick stroke) -->
+        <svg class="cloud-shape" viewBox="0 0 260 150" preserveAspectRatio="none" aria-hidden="true">
           <path
-            d="M 36 102
-               Q 22 102 17 89
-               Q 7 86 10 72
-               Q 0 62 10 50
-               Q 5 36 19 34
-               Q 22 17 38 17
-               Q 46 5 65 7
-               Q 74 0 94 7
-               Q 106 0 122 7
-               Q 134 2 149 12
-               Q 161 5 175 14
-               Q 192 10 204 22
-               Q 214 17 226 29
-               Q 236 26 238 41
-               Q 242 53 232 65
-               Q 240 74 230 86
-               Q 236 96 223 98
-               Q 216 108 202 103
-               Q 188 113 170 106
-               Q 156 113 138 106
-               Q 122 113 108 106
-               Q 94 113 80 106
-               Q 66 113 52 106
-               Q 40 113 36 102 Z"
+            d="M 34 112
+               C 8 102 10 66 34 56
+               C 35 29 66 18 88 28
+               C 104 4 145 8 160 32
+               C 184 17 222 26 226 56
+               C 253 61 259 96 236 113
+               C 225 143 181 140 164 119
+               C 149 145 104 145 91 119
+               C 70 134 43 130 34 112 Z"
             class="cloud-fill"
           />
-          <!-- Second offset path for sketchy doubled-line manga effect -->
           <path
-            d="M 38 104
-               Q 20 104 15 91
-               Q 5 88 8 74
-               Q -2 64 8 52
-               Q 3 38 17 36
-               Q 24 19 40 19
-               Q 48 7 67 9
-               Q 76 2 96 9
-               Q 108 2 124 9
-               Q 136 4 151 14
-               Q 163 7 177 16
-               Q 194 12 206 24
-               Q 216 19 228 31
-               Q 238 28 240 43
-               Q 244 55 234 67
-               Q 242 76 232 88
-               Q 238 98 225 100
-               Q 218 110 204 105
-               Q 190 115 172 108
-               Q 158 115 140 108
-               Q 124 115 110 108
-               Q 96 115 82 108
-               Q 68 115 54 108
-               Q 42 115 38 104 Z"
+            d="M 37 109
+               C 11 97 16 67 39 57
+               M 45 53
+               C 43 27 71 18 91 29
+               M 156 31
+               C 180 19 215 28 220 59
+               M 231 61
+               C 255 69 253 99 233 113
+               M 163 121
+               C 146 143 111 143 94 120
+               M 91 120
+               C 72 131 48 128 36 110"
             class="cloud-sketch"
           />
+          <path d="M 79 25 C 101 1 143 7 162 32" class="cloud-accent" />
+          <path d="M 180 24 C 207 18 231 35 226 59" class="cloud-accent" />
+          <path d="M 31 65 C 4 76 11 106 36 112" class="cloud-accent" />
+          <path d="M 232 109 C 217 139 183 138 164 119" class="cloud-accent" />
+          <path d="M 92 121 C 112 143 145 141 164 120" class="cloud-accent" />
         </svg>
 
         <span class="think-text">
@@ -246,26 +220,30 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 80px;
-  padding: 24px 32px;
-  font-size: 14px;
+  left: auto;
+  right: 18px;
+  top: 16px;
+  width: 248px;
+  height: 138px;
+  min-height: 0;
+  padding: 0 34px 8px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
-/* Thought trail — three circles floating up from the character's head */
 .thought-trail {
   position: absolute;
-  bottom: -50px;
-  left: 20%;
-  width: 60px;
-  height: 44px;
+  bottom: -38px;
+  left: 18px;
+  width: 54px;
+  height: 58px;
   z-index: 0;
 }
 
 .trail-circle {
   fill: white;
-  stroke: #1a1a1a;
-  stroke-width: 2.5;
+  stroke: #2b1c14;
+  stroke-width: 3.6;
   paint-order: stroke fill;
 }
 
@@ -277,39 +255,44 @@ onBeforeUnmount(() => {
   height: 100%;
   z-index: 0;
   pointer-events: none;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.12));
 }
 
-/* Solid white fill, thick manga stroke */
 .cloud-fill {
   fill: #ffffff;
-  stroke: #1a1a1a;
-  stroke-width: 3;
+  stroke: #2b1c14;
+  stroke-width: 4.8;
   stroke-linejoin: round;
   stroke-linecap: round;
   paint-order: stroke fill;
 }
 
-/* Sketchy doubled-line overlay — slightly offset for hand-drawn feel */
 .cloud-sketch {
   fill: none;
-  stroke: #1a1a1a;
-  stroke-width: 2.5;
+  stroke: #2b1c14;
+  stroke-width: 3.1;
   stroke-linejoin: round;
   stroke-linecap: round;
-  opacity: 0.55;
+  opacity: 0.82;
 }
 
-/* Text inside the thinking bubble */
+.cloud-accent {
+  fill: none;
+  stroke: #2b1c14;
+  stroke-width: 3.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+
 .think-text {
   position: relative;
   z-index: 1;
-  color: #1a1a1a;
+  color: #2b1c14;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 13px;
   font-style: normal;
   text-align: center;
-  letter-spacing: 0.5px;
+  letter-spacing: 0;
   font-family: 'Hiragino Sans', 'Noto Sans', 'Segoe UI', sans-serif;
 }
 
